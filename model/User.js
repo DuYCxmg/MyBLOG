@@ -40,7 +40,7 @@ User.prototype.save = function(callback){
         })
     })
 }
-User.get = function(name,callback){
+User.get = function(username,callback){
     //1.打开数据库
     mongodb.open(function(err,db){
         if(err){
@@ -53,7 +53,7 @@ User.get = function(name,callback){
                 return callback(err);
             }
             //查询出name为指定用户名的用户信息，将结果返回
-            collection.findOne({name:name},function(err,user){
+            collection.findOne({username:username},function(err,user){
                 mongodb.close();//关掉数据库
                 if(err){
                     return callback(err);
