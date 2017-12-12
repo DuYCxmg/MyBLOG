@@ -3,6 +3,22 @@ var User = require('../model/User');
 var mongodb = require('../model/db');
 //引入一个加密的插件
 var crypto = require('crypto');
+//未登录情况下，不允许访问发表和退出
+function checkLogin(req,res,next){
+    if(!req.session.user){
+        req.flash('error','未登录');
+        return res.redirect('/login');
+    }
+    next();
+}
+//已登录情况下，不允许访问登录和注册
+function checkNotLogin(req,res,next){
+    if(req.session.user){
+        req.flash('error','已登录');
+        return res.redirect('back');
+    }
+    next();
+}
 module.exports = function(app){
     //首页页面
     app.get('/',function(req,res){
@@ -14,7 +30,7 @@ module.exports = function(app){
         })
     })
     //注册页面
-    app.get('/reg',function(req,res){
+    app.get('/reg',checkNotLogin,function(req,res){
         res.render('reg',{
             title:'注册页面',
             user:req.session.user,
@@ -67,7 +83,7 @@ module.exports = function(app){
         })
     })
     //登录页面
-    app.get('/login',function(req,res){
+    app.get('/login',checkNotLogin,function(req,res){
         res.render('login',{
             title:"登录页面",
             user:req.session.user,
@@ -77,10 +93,32 @@ module.exports = function(app){
     })
     //登录行为
     app.post('/login',function(req,res){
-
+        //1.对密码进行加密
+        var md5 = crypto.createHash('md5');
+        var password = md5.update(req.body.password).digest('hex');
+        //2.判断用户名是否存在
+        User.get(req.body.username,function(err,user){
+            if(err){
+                req.flash('error',err);
+                return res.redirect('/login');
+            }
+            if(!user){
+                req.flash('error','用户名不存在');
+                return res.redirect('/login');
+            }
+            //3.判断密码是否正确
+            if(user.password != password){
+                req.flash('error','密码错误，请重新输入');
+                return res.redirect('/login');
+            }
+            //4.把用户登录的信息保存在session中，并给出提示，跳转首页
+            req.session.user = user;
+            req.flash('success','登录成功');
+            return res.redirect('/');
+        })
     })
     //发表页面
-    app.get('/post',function(req,res){
+    app.get('/post',checkLogin,function(req,res){
         res.render('post',{
             title:'发表页面',
             user:req.session.user,
@@ -93,10 +131,10 @@ module.exports = function(app){
 
     })
     //退出
-    app.get('/logout',function(req,res){
-
+    app.get('/logout',checkLogin,function(req,res){
+        //将session里面的信息清除，并给出提示消息，跳转到首页。
+        req.session.user = null;
+        req.flash('success','退出成功');
+        return res.redirect('/');
     })
-
-
-
 }
