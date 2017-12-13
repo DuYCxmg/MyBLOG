@@ -2,6 +2,8 @@
 var User = require('../model/User');
 //引入Posts集合操作方法
 var Post = require('../model/Post');
+//引入Comments字段的操作方法
+var Comment = require('../model/Comment');
 var mongodb = require('../model/db');
 //引入一个加密的插件
 var crypto = require('crypto');
@@ -32,6 +34,9 @@ function checkNotLogin(req,res,next){
         return res.redirect('back');
     }
     next();
+}
+function formatDate(num){
+    return num < 10 ? '0' + num : num
 }
 module.exports = function(app){
     //首页页面
@@ -260,5 +265,26 @@ module.exports = function(app){
             req.flash('success','删除成功');
             return res.redirect('/');
         })
+    })
+    //添加留言
+    app.post('/comment/:name/:title/:time',function(req,res){
+        var date = new Date();
+        var now = date.getFullYear() + '-' + formatDate(date.getMonth() + 1) + '-' + formatDate(date.getDate()) + ' ' + formatDate(date.getHours()) + ':' + formatDate(date.getMinutes()) + ':' + formatDate(date.getSeconds());
+        //收集要保存在留言中的内容
+        var comment = {
+            c_name:req.session.user.username,
+            c_time:now,
+            c_content:req.body.c_content
+        }
+        var newComment = new Comment(req.params.name,req.params.title,req.params.time,comment);
+        newComment.save(function(err){
+            if(err){
+                req.flash('error',err);
+                return res.redirect('/');
+            }
+            req.flash('success','留言成功');
+            return res.redirect('back');
+        })
+
     })
 }

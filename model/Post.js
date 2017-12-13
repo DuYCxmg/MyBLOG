@@ -22,7 +22,9 @@ Post.prototype.save = function(callback){
         name:this.name,
         title:this.title,
         content:this.content,
-        time:now
+        time:now,
+        //添加一个留言的字段
+        comments:[]
     }
     //3.打开数据库
     //4.读取posts集合
@@ -94,7 +96,14 @@ Post.getOne = function(name,title,time,callback){
                 if(err){
                     return callback(err);
                 }
-                doc.content = markdown.toHTML(doc.content);
+                if(doc){
+                    //markdown解析文章的内容
+                    doc.content = markdown.toHTML(doc.content);
+                    //留言的内容也要通过markdown来进行解析
+                    doc.comments.forEach(function(comment){
+                        comment.c_content = markdown.toHTML(comment.c_content)
+                    })
+                }
                 return callback(null,doc);
             })
         })
