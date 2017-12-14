@@ -41,13 +41,19 @@ function formatDate(num){
 module.exports = function(app){
     //首页页面
     app.get('/',function(req,res){
-        Post.getAll(null,function(err,docs){
+        //如果当前传递了当前页数的参数，就以这个参数为准，否则就是 第一页
+        var page = parseInt(req.query.page) || 1;
+        Post.getTen(null,page,function(err,docs,total){
             if(err){
                 req.flash('error',err);
                 return res.redirect('/');
             }
             res.render('index',{
                 title:'首页',
+                page:page,//当前页数
+                //是不是第一页，如果是第一页的话，值true
+                isFirstPage:(page - 1) * 10 == 0,
+                isLastPage:(page - 1) * 10 + docs.length == total,
                 user:req.session.user,
                 success:req.flash('success').toString(),
                 error:req.flash('error').toString(),
@@ -189,6 +195,7 @@ module.exports = function(app){
     })
     //用户页面
     app.get('/u/:name',function(req,res){
+        var page = parseInt(req.query.page) || 1 ;
         //1.检查用户是否存在
         User.get(req.params.name,function(err,user){
             if(!user){
@@ -196,13 +203,16 @@ module.exports = function(app){
                 return res.redirect('/');
             }
             //2.查询出name对应的所有该用户的文章
-            Post.getAll(user.username,function(err,docs){
+            Post.getTen(user.username,page,function(err,docs,total){
                 if(err){
                     req.flash('error',err);
                     return res.redirect('/');
                 }
                 return res.render('user',{
                     title:'用户文章列表',
+                    page:page,
+                    isFirstPage:(page - 1) * 10 == 0,
+                    isLastPage:(page - 1) * 10 + docs.length == total,
                     user:req.session.user,
                     success:req.flash('success').toString(),
                     error:req.flash('error').toString(),

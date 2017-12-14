@@ -48,7 +48,7 @@ Post.prototype.save = function(callback){
         })
     })
 }
-Post.getAll = function(name,callback){
+Post.getTen = function(name,page,callback){
     mongodb.open(function(err,db){
         if(err){
             return callback(err);
@@ -62,16 +62,25 @@ Post.getAll = function(name,callback){
             if(name){
                 query.name = name;
             }
-            collection.find(query).sort({time:-1}).toArray(function(err,docs){
-                mongodb.close();
+            collection.count(query,function(err,total){
                 if(err){
+                    mongodb.close();
                     return callback(err);
                 }
-                //将每篇文章在读取的时候以markdown的格式进行解析
-                docs.forEach(function(doc){
-                 doc.content = markdown.toHTML(doc.content);
-                 })
-                return callback(null,docs);
+                collection.find(query,{
+                    skip:(page - 1) * 10,
+                    limit:10
+                }).sort({time:-1}).toArray(function(err,docs){
+                    mongodb.close();
+                    if(err){
+                        return callback(err);
+                    }
+                    //将每篇文章在读取的时候以markdown的格式进行解析
+                    docs.forEach(function(doc){
+                        doc.content = markdown.toHTML(doc.content);
+                    })
+                    return callback(null,docs,total);
+                })
             })
         })
     })
