@@ -162,7 +162,9 @@ module.exports = function(app){
     app.post('/post',function(req,res){
         //获取到当前登录用户的用户名
         var currentName = req.session.user.username;
-        var newPost = new Post(currentName,req.body.title,req.body.content);
+        //接收一下传递过来的标签数组
+        var tags = [req.body.tag1,req.body.tag2,req.body.tag3];
+        var newPost = new Post(currentName,req.body.title,req.body.content,tags);
         newPost.save(function(err){
           if(err){
               req.flash('error',err);
@@ -297,4 +299,53 @@ module.exports = function(app){
         })
 
     })
+    //存档
+    app.get('/archive',checkLogin,function(req,res){
+        Post.getArchive(function(err,docs){
+            if(err){
+                req.flash('error',err);
+                return res.redirect('/');
+            }
+            res.render('archive',{
+                title:'存档',
+                user:req.session.user,
+                success:req.flash('success').toString(),
+                error:req.flash('error').toString(),
+                docs:docs
+            })
+        })
+    })
+    //标签页面
+    app.get('/tags',checkLogin,function(req,res){
+        Post.getTags(function(err,docs){
+            if(err){
+                req.flash('error',err);
+                return res.redirect('/');
+            }
+            return res.render('tags',{
+                title:'标签列表',
+                user:req.session.user,
+                success:req.flash('success').toString(),
+                error:req.flash('error').toString(),
+                docs:docs
+            })
+        })
+    })
+    //显示标签所对应的文章
+    app.get('/tags/:tag',checkLogin,function(req,res){
+        Post.getTag(req.params.tag,function(err,docs){
+            if(err){
+                req.flash('error',err);
+                return res.redirect('/');
+            }
+            return res.render('tag',{
+                title:'标签列表页',
+                user:req.session.user,
+                success:req.flash('success').toString(),
+                error:req.flash('error').toString(),
+                docs:docs
+            })
+        })
+    })
+
 }

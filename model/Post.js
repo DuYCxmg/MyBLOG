@@ -4,10 +4,11 @@
 var mongodb = require('./db');
 //引入markdown
 var markdown = require('markdown').markdown
-function Post(name,title,content){
+function Post(name,title,content,tags){
     this.name = name;
     this.title = title;
     this.content = content;
+    this.tags = tags;
 }
 //格式化时间的函数
 function formatDate(num){
@@ -24,7 +25,9 @@ Post.prototype.save = function(callback){
         content:this.content,
         time:now,
         //添加一个留言的字段
-        comments:[]
+        comments:[],
+        //添加一个标签的字段
+        tags:this.tags
     }
     //3.打开数据库
     //4.读取posts集合
@@ -192,6 +195,81 @@ Post.remove = function(name,title,time,callback){
                     return callback(err);
                 }
                 return callback(null);
+            })
+        })
+    })
+}
+//存档
+Post.getArchive = function(callback){
+    mongodb.open(function(err,db){
+        if(err){
+            return callback(err);
+        }
+        db.collection('posts',function(err,collection){
+            if(err){
+                mongodb.close();
+                return callback(err);
+            }
+            collection.find({},{
+                name:1,
+                title:1,
+                time:1
+            }).sort({time:-1}).toArray(function(err,docs){
+                mongodb.close();
+                if(err){
+                    return callback(err);
+                }
+                return callback(null,docs);
+            })
+        })
+    })
+}
+//取出所有的标签
+Post.getTags = function(callback){
+    mongodb.open(function(err,db){
+        if(err){
+            return callback(err);
+        }
+        db.collection('posts',function(err,collection){
+            if(err){
+                mongodb.close();
+                return callback(err);
+            }
+            //distinct是将某个字段中的数据进行去重处理
+            //将结果以数组形式返回.
+            collection.distinct('tags',function(err,docs){
+                mongodb.close();
+                if(err){
+                    return callback(err);
+                }
+                return callback(null,docs);
+            })
+        })
+    })
+}
+//获取标签所对应的文章列表
+Post.getTag = function(tag,callback){
+    mongodb.open(function(err,db){
+        if(err){
+            return callback(err);
+        }
+        db.collection('posts',function(err,collection){
+            if(err){
+                mongodb.close();
+                return callback(err);
+            }
+            collection.find({
+                tags:tag
+            },{
+                name:1,
+                title:1,
+                time:1
+            }).sort({time:-1}).toArray(function(err,docs){
+                mongodb.close();
+                if(err){
+                    return callback(err);
+                }
+                return callback(null,docs);
             })
         })
     })
