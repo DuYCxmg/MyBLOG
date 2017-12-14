@@ -22,5 +22,6 @@
 <p>
     <%- doc.content %>
 </p>
+<p class="info">阅读：<%= doc.pv %> | 评论：<%= doc.comments.length %></p>
 <% include comment %>
 <% include footer %>

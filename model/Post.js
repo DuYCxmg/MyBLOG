@@ -27,7 +27,9 @@ Post.prototype.save = function(callback){
         //添加一个留言的字段
         comments:[],
         //添加一个标签的字段
-        tags:this.tags
+        tags:this.tags,
+        //添加一个访问量的字段
+        pv:0
     }
     //3.打开数据库
     //4.读取posts集合
@@ -104,11 +106,21 @@ Post.getOne = function(name,title,time,callback){
                 title:title,
                 time:time
             },function(err,doc){
-                mongodb.close();
                 if(err){
+                    mongodb.close();
                     return callback(err);
                 }
                 if(doc){
+                    //将文章的浏览量+ 1
+                    collection.update({
+                        name:name,
+                        title:title,
+                        time:time
+                    },{
+                        $inc:{pv:1}
+                    },function(err){
+                        mongodb.close()
+                    })
                     //markdown解析文章的内容
                     doc.content = markdown.toHTML(doc.content);
                     //留言的内容也要通过markdown来进行解析
@@ -271,6 +283,35 @@ Post.getTag = function(tag,callback){
                 }
                 return callback(null,docs);
             })
+        })
+    })
+}
+//搜索
+Post.search = function(keyword,callback){
+    mongodb.open(function(err,db){
+        if(err){
+            return callback(err);
+        }
+        db.collection('posts',function(err,collection){
+            if(err){
+                mongodb.close();
+                return callback(err);
+            }
+            var newRegex = new RegExp(keyword,"i");
+            collection.find({
+                title:newRegex
+            },{
+                name:1,
+                title:1,
+                time:1
+            }).sort({time:-1}).toArray(function(err,docs){
+                mongodb.close();
+                if(err){
+                    return callback(err);
+                }
+                return callback(null,docs);
+            })
+
         })
     })
 }

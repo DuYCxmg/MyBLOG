@@ -347,5 +347,21 @@ module.exports = function(app){
             })
         })
     })
+    //搜索
+    app.get('/search',function(req,res){
+        Post.search(req.query.keyword,function(err,docs){
+            if(err){
+                req.flash('error',err);
+                return res.redirect('/');
+            }
+            return res.render('search',{
+                title:'搜索结果',
+                user:req.session.user,
+                success:req.flash('success').toString(),
+                error:req.flash('error').toString(),
+                docs:docs
+            })
+        })
+    })
 
 }
